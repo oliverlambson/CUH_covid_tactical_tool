@@ -60,6 +60,7 @@ pandas=1.0.5=py37h959d312_0
 pandoc=2.9.2.1=0
 pandocfilters=1.4.2=py37_1
 parso=0.7.0=py_0
+patsy=0.5.1=py37_0
 pexpect=4.8.0=py37_0
 pickleshare=0.7.5=py37_0
 pip=20.1.1=py37_1
@@ -85,6 +86,7 @@ send2trash=1.5.0=py37_0
 setuptools=47.3.1=py37_0
 six=1.15.0=py_0
 sqlite=3.32.3=hffcf06c_0
+statsmodels=0.11.1=py37haf1e3a3_0
 terminado=0.8.3=py37_0
 testpath=0.4.4=py_0
 tk=8.6.10=hb0a8c7a_0
