@@ -1,6 +1,14 @@
+# Mac specific
 .DS_store
+
+# Jupyter notebooks
 .ipynb_checkpoints
+*/.ipynb_checkpoints
 */.ipynb_checkpoints/*
+
+# VS Code
 .vscode
+
+# Python caching
 __pycache__
 *.pyc
