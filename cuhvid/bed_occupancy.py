@@ -39,8 +39,13 @@ def get_bed_occupancy(df, LoS_GIM, LoS_ICU, frac_ICU):
     """
     df['GIM'] = ((1-frac_ICU)*df.y).rolling(LoS_GIM, min_periods=0).sum()
     df['ICU'] = ((frac_ICU)*df.y).rolling(LoS_ICU, min_periods=0).sum()
+    df['tot_occ'] = df['GIM'] + df['ICU']
+    df['net_intake'] = df['tot_occ'].diff()
     
     df['GIM_gen'] = np.round((1-frac_ICU)*df.y_gen).rolling(LoS_GIM, min_periods=0).sum()
     df['ICU_gen'] = np.round((frac_ICU)*df.y_gen).rolling(LoS_ICU, min_periods=0).sum()
+    df['tot_occ_gen'] = df['GIM_gen'] + df['ICU_gen']
+
+    df['net_intake_gen'] = df['tot_occ_gen'].diff()
     
     return df
