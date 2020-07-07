@@ -63,4 +63,4 @@ def get_admissions(alpha, loc, scale, peak_adm, sd_coeff, sd_const, n_days=92):
     y_l = np.clip(y - 1.96*sd, a_min=0, a_max=None)
     y_u = np.clip(y + 1.96*sd, a_min=0, a_max=None)
     
-    return pd.DataFrame(data={'y':y, 'y_gen':y_g, 'y_lower':y_l, 'y_upper':y_u}, index=pd.Series(t, name='Day'))
+    return pd.DataFrame(data={'y':y, 'y_lower':y_l, 'y_upper':y_u, 'y_gen':y_g}, index=pd.Series(t, name='Day'))
