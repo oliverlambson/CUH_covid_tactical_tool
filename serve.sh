@@ -1,0 +1,1 @@
+voila Scratchpads/Admissions_generation.ipynb --enable_nbextensions=True --TagRemovePreprocessor.remove_cell_tags='{"hide"}'
