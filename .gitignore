@@ -12,3 +12,6 @@
 # Python caching
 __pycache__
 *.pyc
+
+# MS Office temporary documents
+~*
