@@ -30,7 +30,7 @@ def get_color_numbers(df, scenario, wards=False, beds=False):
         raise Exception('No columns to summarise.')
 
     # all_colors = pd.unique(df_wards[['A_color', 'B_color', 'C_color']].values.ravel('K'))
-    all_colors = ['R', 'A', 'G', 'RG', 'DECANT', 'excl.']
+    all_colors = ['R', 'A', 'G', 'excl.']
 
     agg_cols = {}
     if wards:
