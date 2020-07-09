@@ -48,20 +48,22 @@ def get_color_numbers(df, scenario, wards=False, beds=False):
     return dfr
 
 from cuhvid.wards2 import Wards
-def get_ward_beds(df_gen):
+def get_ward_beds(df):
     w = Wards()
     df_Wards = w.df
 
-    d_A = get_color_numbers(df_Wards, 'A', beds=True)
+    df_A = get_color_numbers(df_Wards, 'A', beds=True)
 
     # initialise to base setup
-    df_gen['GIM_R_beds'] = d_A.loc['R', 'Beds']
-    df_gen['GIM_A_beds'] = d_A.loc['A', 'Beds']
-    df_gen['GIM_G_beds'] = d_A.loc['G', 'Beds']
+    df['GIM_R_beds'] = df_A.loc['R', 'Beds']
+    df['GIM_A_beds'] = df_A.loc['A', 'Beds']
+    df['GIM_G_beds'] = df_A.loc['G', 'Beds']
 
     # TODO: logic here to calculate no. beds remaining & ward opening
     # for now: no ward changeovers
-    df_gen['GIM_R_beds_avail'] = df_gen['GIM_R_beds'] - df_gen['GIM_R_gen']
-    df_gen['GIM_A_beds_avail'] = df_gen['GIM_A_beds'] - df_gen['GIM_A_gen']
+    df['GIM_R_beds_avail'] = df['GIM_R_beds'] - df['GIM_R_gen']
+    df['GIM_A_beds_avail'] = df['GIM_A_beds'] - df['GIM_A_gen']
+
+    return df
 
     return df_gen
