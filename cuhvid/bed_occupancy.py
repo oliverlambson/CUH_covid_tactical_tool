@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-def get_bed_occupancy(df, LoS_GIM, LoS_ICU, frac_ICU):
+def get_bed_occupancy(df, LoS_GIM, LoS_ICU, frac_ICU, frac_GIM_amber, LoS_amber, frac_amber_positive):
     """
     Generates GIM & ICU bed occupancy from daily covid admissions.
     
@@ -15,6 +15,10 @@ def get_bed_occupancy(df, LoS_GIM, LoS_ICU, frac_ICU):
         ave. length of stay for Covid+ ICU patient
     frac_ICU : float
         fraction of all admissions that are ICU patients
+    frac_GIM_amber : float
+        fraction of GIM admissions that go to amber wards first
+    LoS_amber : int
+        ave. length of stay for patient admitted to GIM amber ward
     
     Returns
     -------
@@ -45,7 +49,12 @@ def get_bed_occupancy(df, LoS_GIM, LoS_ICU, frac_ICU):
     df['GIM_gen'] = np.round((1-frac_ICU)*df.y_gen).rolling(LoS_GIM, min_periods=0).sum()
     df['ICU_gen'] = np.round((frac_ICU)*df.y_gen).rolling(LoS_ICU, min_periods=0).sum()
     df['tot_occ_gen'] = df['GIM_gen'] + df['ICU_gen']
-
     df['net_intake_gen'] = df['tot_occ_gen'].diff()
+
+    # df['GIM_A_gen'] = np.round((frac_GIM_amber*df.y_gen)).rolling(LoS_amber, min_periods=0).sum()
+    GIM_A_gen_positive = (frac_GIM_amber*df.y_gen).rolling(LoS_amber, min_periods=0).sum()
+    df['GIM_A_gen'] = np.round(GIM_A_gen_positive/frac_amber_positive)
+    df['GIM_A_gen'] = df['GIM_A_gen'].shift(-LoS_amber) # shift amber demand pre-positive test result
+    df['GIM_R_gen'] = df['GIM_gen'] - np.round(GIM_A_gen_positive) # assumes that GIM LoS is total LoS (i.e. GIM LoS = GIM LoS Amber + GIM LoS Red)
     
     return df
