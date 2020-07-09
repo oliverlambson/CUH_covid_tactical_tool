@@ -66,4 +66,26 @@ def get_ward_beds(df):
 
     return df
 
-    return df_gen
+from cuhvid.wards2 import Wards
+def get_ward_change_rank():
+    """
+    Gets a dataframe summarising the ward changeover order & the corresponding number of beds available after each change.
+    """
+    w = Wards()
+    df_Wards = w.df
+
+    df_AB = w.get_AB_wards()
+    df_AB = df_AB[['id', 'AB_change_no', 'A_color', 'B_color', 'A_no_beds', 'B_no_beds']].sort_values(by='AB_change_no')
+
+    df_A = get_color_numbers(df_Wards, 'A', beds=True)
+
+    all_colors = ['R', 'A', 'G', 'excl.']
+    for color in all_colors:
+        df_AB[f'delta_{color}'] = (
+            df_AB.apply(lambda s : -s.A_no_beds if color == s.A_color else 0, axis='columns') 
+            + df_AB.apply(lambda s : s.B_no_beds if color == s.B_color else 0, axis='columns')
+        )
+        df_AB[f'{color}_tot'] = df_AB[f'delta_{color}'].cumsum() + df_A.loc[color, 'Beds']
+
+    df_summary = df_AB[['AB_change_no', 'id', 'A_color', 'B_color', 'R_tot', 'A_tot', 'G_tot']]
+    return df_summary
