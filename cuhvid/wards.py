@@ -79,6 +79,19 @@ def get_ward_change_rank():
 
     df_A = get_color_numbers(df_Wards, 'A', beds=True)
 
+        # ..... temporary sorting .....
+    rank_order = {
+        'GR': 0,
+        'AR': 1,
+        'GA': 2,
+    }
+    df_AB['rank'] = df_AB['A_color'] + df_AB['B_color']
+    df_AB['rank'] = df_AB['rank'].map(rank_order)
+
+    df_AB = df_AB.sort_values(by=['rank', 'B_no_beds'], ascending=[True, False])
+    df_AB['AB_change_no'] = range(0, len(df_AB['AB_change_no']), 1)
+    # ..... end temporary sorting .....
+
     all_colors = ['R', 'A', 'G', 'excl.']
     for color in all_colors:
         df_AB[f'delta_{color}'] = (
@@ -87,5 +100,5 @@ def get_ward_change_rank():
         )
         df_AB[f'{color}_tot'] = df_AB[f'delta_{color}'].cumsum() + df_A.loc[color, 'Beds']
 
-    df_summary = df_AB[['AB_change_no', 'id', 'A_color', 'B_color', 'R_tot', 'A_tot', 'G_tot']]
+    df_summary = df_AB[['AB_change_no', 'id', 'A_color', 'B_color', 'R_tot', 'A_tot', 'G_tot', 'rank', 'B_no_beds']]
     return df_summary
