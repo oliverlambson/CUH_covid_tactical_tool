@@ -115,5 +115,6 @@ def get_ward_change_rank():
     }, ignore_index=True)
 
     df_summary = df_summary.sort_values(by='AB_change_no')
+    df_summary.loc[:, 'B_no_beds'] = df_summary.loc[:, 'B_no_beds'].shift(-1, fill_value=0)
 
     return df_summary
