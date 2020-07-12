@@ -79,7 +79,7 @@ def get_ward_change_rank():
 
     df_A = get_color_numbers(df_Wards, 'A', beds=True)
 
-        # ..... temporary sorting .....
+    # ..... temporary sorting .....
     rank_order = {
         'GR': 0,
         'AR': 1,
