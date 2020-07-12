@@ -114,4 +114,6 @@ def get_ward_change_rank():
         'B_no_beds': 0
     }, ignore_index=True)
 
+    df_summary = df_summary.sort_values(by='AB_change_no')
+
     return df_summary

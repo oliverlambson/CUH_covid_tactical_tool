@@ -76,31 +76,35 @@ def evaluate_triggers(df, df_ward_rank, admissions, net_intake, free_beds_min, f
 
         if df.loc[idx, 'trigger_up']:
             # increment ward config no. on days
-            new_AB_change_no = df.loc[idx+ward_changeup_time, 'config_AB_change_no'] + 1
+            new_AB_change_no = df.loc[idx, 'config_AB_change_no'] + 1
 
             if new_AB_change_no <= (df_ward_rank.index.max() - df.loc[idx, 'no_up_in_prog']):
                 change_flag = True
         # mark ward opening duration
-        df.loc[idx:idx+ward_changeup_time, 'no_up_in_prog'] += 1
-                df.loc[idx+ward_changeup_time:, 'config_AB_change_no'] = new_AB_change_no
+                idx_end = int(min(idx + ward_changeup_time, df.index.max()))
 
+                df.loc[idx:idx_end, 'no_up_in_prog'] += 1
+                df.loc[idx_end:, 'config_AB_change_no'] = new_AB_change_no
+            
         elif df.loc[idx, 'trigger_down']:
         # increment ward config no. on days
-            new_AB_change_no = df.loc[idx+ward_changeup_time, 'config_AB_change_no'] - 1
+            new_AB_change_no = df.loc[idx, 'config_AB_change_no'] - 1
 
             if new_AB_change_no >= (df_ward_rank.index.min() - 1 + df.loc[idx, 'no_down_in_prog']):
                 change_flag = True
                 # mark ward closing duration
-                df.loc[idx:idx+ward_changedown_time, 'no_down_in_prog'] += 1
-                df.loc[idx+ward_changedown_time:, 'config_AB_change_no'] = new_AB_change_no
+                idx_end = int(min(idx + ward_changedown_time, df.index.max()))
+
+                df.loc[idx:idx_end, 'no_down_in_prog'] += 1
+                df.loc[idx_end:, 'config_AB_change_no'] = new_AB_change_no
 
         if change_flag:
         # update bed totals
         new_R_tot = df_ward_rank.loc[new_AB_change_no, 'R_tot']
-        df.loc[idx+ward_changeup_time:, 'GIM_R_beds'] = new_R_tot
+            df.loc[idx_end:, 'GIM_R_beds'] = new_R_tot
 
         new_A_tot = df_ward_rank.loc[new_AB_change_no, 'A_tot']
-        df.loc[idx+ward_changeup_time:, 'GIM_A_beds'] = new_A_tot
+            df.loc[idx_end:, 'GIM_A_beds'] = new_A_tot
 
         # update available beds
         df.loc[idx:, 'GIM_R_beds_avail'] = df.loc[idx:, 'GIM_R_beds'] - df.loc[idx:, 'GIM_R_gen']
