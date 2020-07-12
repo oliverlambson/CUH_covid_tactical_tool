@@ -101,4 +101,17 @@ def get_ward_change_rank():
         df_AB[f'{color}_tot'] = df_AB[f'delta_{color}'].cumsum() + df_A.loc[color, 'Beds']
 
     df_summary = df_AB[['AB_change_no', 'id', 'A_color', 'B_color', 'R_tot', 'A_tot', 'G_tot', 'rank', 'B_no_beds']]
+
+    df_summary = df_summary.append({
+        'AB_change_no': -1,
+        'id': 'start',
+        'A_color': '-',
+        'B_color': '-',
+        'R_tot': df_A.loc['R', 'Beds'],
+        'A_tot': df_A.loc['A', 'Beds'],
+        'G_tot': df_A.loc['G', 'Beds'],
+        'rank': -1,
+        'B_no_beds': 0
+    }, ignore_index=True)
+
     return df_summary
