@@ -35,17 +35,17 @@ def get_rolling_mean(df, columns, no_days, center=False):
     df = df.join(df_rm, rsuffix='_rm')
     return df
 
-def evaluate_triggers(df, df_ward_rank, admissions, net_intake, free_beds, ward_changeup_time, ward_changedown_time):
+def evaluate_triggers(df, df_ward_rank, admissions, net_intake, free_beds_min, free_beds_max, ward_changeup_time, ward_changedown_time):
     # this should be moved to original ward function
     df_ward_rank = df_ward_rank.set_index('AB_change_no')
 
     # init triggers
     df['trigger_admissions'] = df['y_gen_rm'] >= admissions
     df['trigger_net_intake'] = df['net_intake_gen_rm'] <= net_intake
-    df['trigger_free_beds'] = (df['GIM_R_beds_avail'] <= free_beds) | (df['GIM_A_beds_avail'] <= free_beds)
+    df['trigger_free_beds_min'] = (df['GIM_R_beds_avail'] <= free_beds_min) | (df['GIM_A_beds_avail'] <= free_beds_min)
 
     # for now only use no. free beds as trigger
-    df['trigger_up'] = df['trigger_free_beds']
+    df['trigger_up'] = df['trigger_free_beds_min']
 
     # init ward config no. on days
     df['config_AB_change_no'] = -1
@@ -57,7 +57,7 @@ def evaluate_triggers(df, df_ward_rank, admissions, net_intake, free_beds, ward_
     
     while idx_list.any():
         idx = idx_list[0]
-        print(idx)
+        # print(idx)
 
         # mark ward opening duration
         df.loc[idx:idx+ward_changeup_time, 'no_up_in_prog'] += 1
@@ -81,8 +81,8 @@ def evaluate_triggers(df, df_ward_rank, admissions, net_intake, free_beds, ward_
         df.loc[idx:, 'GIM_A_beds_avail'] = df.loc[idx:, 'GIM_A_beds'] - df.loc[idx:, 'GIM_A_gen']
 
         # re-evaluate triggers
-        df.loc[idx:, 'trigger_free_beds'] = (df.loc[idx:, 'GIM_R_beds_avail'] <= free_beds) | (df.loc[idx:, 'GIM_A_beds_avail'] <= free_beds)
-        df.loc[idx:, 'trigger_up'] = df.loc[idx:, 'trigger_free_beds']
+        df.loc[idx:, 'trigger_free_beds_min'] = (df.loc[idx:, 'GIM_R_beds_avail'] <= free_beds_min) | (df.loc[idx:, 'GIM_A_beds_avail'] <= free_beds_min)
+        df.loc[idx:, 'trigger_up'] = df.loc[idx:, 'trigger_free_beds_min']
 
         # update index list
         idx_list = df.index[(df['trigger_up']) & (df.index > idx)]
