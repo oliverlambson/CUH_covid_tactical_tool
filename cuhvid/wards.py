@@ -231,7 +231,7 @@ def get_ward_change_rank2():
     # --------------- Reorder columns ---------------
     df_rank = df_rank[[
         'rank', 'block', 'ID', 'scenario', 'priority', 'color_rank',
-        'i_color', 'ii_color',
+        'i_color', 'ii_color', 'i_no_beds', 'ii_no_beds',
         'dR_no_beds', 'dA_no_beds', 'dG_no_beds'
     ]]
 
