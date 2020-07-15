@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 
 
 def get_color_numbers(df, scenario, wards=False, beds=False):
@@ -121,3 +122,138 @@ def get_ward_change_rank():
     df_summary.loc[:, 'B_no_beds'] = df_summary.loc[:, 'B_no_beds'].shift(-1, fill_value=0)
 
     return df_summary
+
+# REFACTORED BELOW
+
+def _delta_beds(s, color):
+    if s.i_color == color:
+        return -s.i_no_beds
+    elif s.ii_color == color:
+        return s.ii_no_beds
+    else:
+        return 0
+
+
+def get_ward_change_rank2():
+    # --------------------------------------------
+    # --------------- Read-in data ---------------
+    # --------------------------------------------
+    path = '/Users/oliverlambson/GitHub/ISMM/CUH_covid_tactical_tool/Data/bed_plan.xlsx'
+    df = pd.read_excel(path, sheet_name='v13')
+
+    # fill NaNs in important columns
+    df.loc[:, df.columns.str.contains('_priority')] = df.loc[:, df.columns.str.contains('_priority')].fillna(0)
+    df.loc[:, df.columns.str.contains('_no_beds')] = df.loc[:, df.columns.str.contains('_no_beds')].fillna(0)
+
+    # drop unnecessary columns
+    df = df.drop(columns=df.columns[df.columns.str.contains('no_beds_')])
+    df = df.drop(columns=['division'])
+
+    # raise error if ward changes A->B and B->C
+    if len(df[df.AB_change & df.BC_change]) != 0:
+        raise Exception('Cannot handle changing same ward twice (from scenario A to B and scenario B to C)')
+
+    # -----------------------------------------------------------
+    # --------------- Get configuration summaries ---------------
+    # -----------------------------------------------------------
+    all_colors = ['R', 'A', 'G']
+    scenarios = ['A', 'B', 'C']
+
+    multi_index = pd.MultiIndex.from_product([scenarios, all_colors], names=['scenario', 'color'])
+    df_summary = pd.DataFrame(
+        np.zeros((len(scenarios)*len(all_colors),2)).astype(int), 
+        index=multi_index, 
+        columns=['Wards', 'Beds']
+    )
+
+    for scenario in scenarios:
+        agg_cols = {}
+        agg_cols['Wards'] = (f'{scenario}_no_beds', 'count')
+        agg_cols['Beds'] = (f'{scenario}_no_beds', 'sum')
+
+        dfr = (
+            df.groupby(by=f'{scenario}_color')
+                .agg(**agg_cols)
+                .reindex(all_colors, fill_value=0)
+                .rename_axis(None)
+        )
+        
+        df_summary.loc[scenario, :] = dfr.values.astype(int)
+
+    # --------------------------------------------------------
+    # --------------- Generate ward rank table ---------------
+    # --------------------------------------------------------
+    df_AB = df.loc[df.AB_change, ['block', 'ID',
+                                'A_color', 'A_no_beds', 'AB_priority',
+                                'B_color', 'B_no_beds']]
+    df_AB = df_AB.rename(columns={
+        'A_color': 'i_color',
+        'A_no_beds': 'i_no_beds',
+        'AB_priority': 'priority',
+        'B_color': 'ii_color',
+        'B_no_beds': 'ii_no_beds',
+    })
+    df_AB['scenario'] = 'B'
+
+    df_BC = df.loc[df.BC_change, ['block', 'ID',
+                                'B_color', 'B_no_beds', 'BC_priority',
+                                'C_color', 'C_no_beds']]
+    df_BC = df_BC.rename(columns={
+        'B_color': 'i_color',
+        'B_no_beds': 'i_no_beds',
+        'BC_priority': 'priority',
+        'C_color': 'ii_color',
+        'C_no_beds': 'ii_no_beds',
+    })
+    df_BC['scenario'] = 'C'
+
+    df_rank = pd.concat([df_AB, df_BC])
+
+    # --------------- Add bed deltas ---------------
+    df_rank['dR_no_beds'] = df_rank.apply(_delta_beds, axis='columns', color='R')
+    df_rank['dA_no_beds'] = df_rank.apply(_delta_beds, axis='columns', color='A')
+    df_rank['dG_no_beds'] = df_rank.apply(_delta_beds, axis='columns', color='G')
+
+    # --------------- Add changeover type rank ---------------
+    color_rank = {
+        'GR': 0,
+        'AR': 1,
+        'GA': 2,
+    }
+    df_rank['color_rank'] = df_rank['i_color'] + df_rank['ii_color']
+    df_rank['color_rank'] = df_rank['color_rank'].map(color_rank)
+
+    bed_size_ascending = False
+    df_rank = df_rank.sort_values(by=['scenario', 'priority', 'color_rank', 'dR_no_beds', 'dA_no_beds'], 
+                            ascending=[True, True, True, bed_size_ascending, bed_size_ascending])
+    df_rank['rank'] = range(1, len(df_rank)+1)
+
+    # --------------- Reorder columns ---------------
+    df_rank = df_rank[[
+        'rank', 'block', 'ID', 'scenario', 'priority', 'color_rank',
+        'i_color', 'ii_color',
+        'dR_no_beds', 'dA_no_beds', 'dG_no_beds'
+    ]]
+
+    # --------------- Add initial state ---------------
+    df_rank = df_rank.append({
+        'rank': 0,
+        'scenario': 'A',
+        'priority': 0,
+        'color_rank': 0,
+        'dR_no_beds': 0,
+        'dA_no_beds': 0,
+        'dG_no_beds': 0
+    }, ignore_index=True).fillna('').sort_values(by='rank').set_index('rank')
+
+    # --------------- Add no beds column ---------------
+    for c in ['R', 'A', 'G']:
+        df_rank[f'{c}_no_beds'] = df_summary.loc[('A', c),'Beds'] + df_rank[f'd{c}_no_beds'].cumsum()
+
+    # --------------- Add total no beds column ---------------
+    df_rank['total_no_beds'] = df_rank['R_no_beds'] + df_rank['A_no_beds'] + df_rank['G_no_beds']
+
+    # --------------------------------------
+    # --------------- Return ---------------
+    # --------------------------------------
+    return df_rank
