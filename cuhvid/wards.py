@@ -1,5 +1,6 @@
 import pandas as pd
 
+
 def get_color_numbers(df, scenario, wards=False, beds=False):
     """
     Gets summary figures for number of wards and number of beds by ward color for a given scenario.
@@ -47,6 +48,7 @@ def get_color_numbers(df, scenario, wards=False, beds=False):
 
     return dfr
 
+
 from cuhvid.wards2 import Wards
 def get_ward_beds(df):
     w = Wards()
@@ -65,6 +67,7 @@ def get_ward_beds(df):
     df['GIM_A_beds_avail'] = df['GIM_A_beds'] - df['GIM_A_gen']
 
     return df
+
 
 from cuhvid.wards2 import Wards
 def get_ward_change_rank():
