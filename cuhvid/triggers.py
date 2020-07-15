@@ -40,15 +40,26 @@ def evaluate_triggers(df, df_ward_rank, admissions, net_intake, free_beds_min, f
     df_ward_rank = df_ward_rank.set_index('AB_change_no')
 
     # init triggers
-    df['trigger_admissions'] = df['y_gen_rm'] >= admissions
-    df['trigger_net_intake'] = df['net_intake_gen_rm'] <= net_intake
+    # ..... admissions (up) ......
+    # df['trigger_admissions'] = (df['y_gen_rm'] >= admissions) & (df['y_gen_rm'].shift() < admissions) # rolling mean trigger cross detection
+    df['trigger_admissions'] = df['y_gen_rm'].rolling(3).apply(lambda s: s.gt(admissions).all()).fillna(0).astype(bool)
+    df['trigger_admissions'] = (df['trigger_admissions'] - df['trigger_admissions'].shift()).fillna(0)
+    df.loc[df['trigger_admissions'] != 1, 'trigger_admissions'] = 0
+    df['trigger_admissions'] = df['trigger_admissions'].astype(bool)
+    
+    # ..... net intake (down) ......
+    df['trigger_net_intake'] = df['net_intake_gen_rm'].rolling(5).apply(lambda s: s.lt(net_intake).all()).fillna(0).astype(bool)
+    df['trigger_net_intake'] = (df['trigger_net_intake'] - df['trigger_net_intake'].shift()).fillna(0)
+    df.loc[df['trigger_net_intake'] != 1, 'trigger_net_intake'] = 0
+    df['trigger_net_intake'] = df['trigger_net_intake'].astype(bool)
+
     # df['trigger_free_beds_min'] = (df['GIM_R_beds_avail'] <= free_beds_min) | (df['GIM_A_beds_avail'] <= free_beds_min)
     df['trigger_free_beds_min'] = (df['GIM_R_beds_avail'] <= free_beds_min) # only red
     df['trigger_free_beds_max'] = False
 
     # for now only use no. free beds as trigger
-    df['trigger_up'] = df['trigger_free_beds_min']
-    df['trigger_down'] = df['trigger_free_beds_max']
+    df['trigger_up'] = df['trigger_free_beds_min'] | df['trigger_admissions'] # use trigger admissions too
+    df['trigger_down'] = df['trigger_free_beds_max'] | df['trigger_net_intake'] # use trigger net intake too
 
     # init ward config no. on days
     df['config_AB_change_no'] = -1
@@ -79,8 +90,11 @@ def evaluate_triggers(df, df_ward_rank, admissions, net_intake, free_beds_min, f
             new_AB_change_no = df.loc[idx, 'config_AB_change_no'] + df.loc[idx, 'no_wards_up_in_prog'] + 1
             
             change_flag = (
-                (new_AB_change_no <= df_ward_rank.index.max()) & # wards left to open
-                (df.loc[idx, 'GIM_R_beds_avail'] + df.loc[idx, 'no_beds_up_in_prog'] <= free_beds_min) # need beds after staged are changed
+                (new_AB_change_no <= df_ward_rank.index.max()) # wards left to open or trigger up signal
+                & (
+                    (df.loc[idx, 'GIM_R_beds_avail'] + df.loc[idx, 'no_beds_up_in_prog'] <= free_beds_min) # need beds after staged are changed
+                    | (df.loc[idx, 'trigger_admissions'])
+                )
             )
             if change_flag:
                 # mark ward opening duration
@@ -100,8 +114,11 @@ def evaluate_triggers(df, df_ward_rank, admissions, net_intake, free_beds_min, f
             new_AB_change_no = df.loc[idx, 'config_AB_change_no'] - df.loc[idx, 'no_wards_down_in_prog'] - 1
 
             change_flag = (
-                (new_AB_change_no >= df_ward_rank.index.min()) & # wards left to close
-                (df.loc[idx, 'GIM_R_beds_avail'] - df.loc[idx, 'no_beds_down_in_prog'] >= free_beds_max) # need beds after staged are changed
+                (new_AB_change_no >= df_ward_rank.index.min()) # wards left to close
+                & (
+                    (df.loc[idx, 'GIM_R_beds_avail'] - df.loc[idx, 'no_beds_down_in_prog'] >= free_beds_max) # need beds after staged are changed
+                    | (df.loc[idx, 'trigger_net_intake'])
+                )
             )
             if change_flag:
                 # mark ward closing duration
@@ -133,7 +150,7 @@ def evaluate_triggers(df, df_ward_rank, admissions, net_intake, free_beds_min, f
             df.loc[idx:, 'trigger_up'] = df.loc[idx:, 'trigger_free_beds_min']
             # df.loc[idx:, 'trigger_free_beds_max'] = (df.loc[idx:, 'GIM_R_beds_avail'] >= free_beds_max) | (df.loc[idx:, 'GIM_A_beds_avail'] >= free_beds_max)
             df.loc[idx:, 'trigger_free_beds_max'] = (df.loc[idx:, 'GIM_R_beds_avail'] >= free_beds_max) # only red
-            df.loc[idx:, 'trigger_down'] = df.loc[idx:, 'trigger_free_beds_max']
+            df.loc[idx:, 'trigger_down'] = (df.loc[idx:, 'trigger_free_beds_max']) | (df.loc[idx:, 'trigger_net_intake']) # use trigger net intake too
 
         # update index list
         idx_list = df.index[(df['trigger_up'] | df['trigger_down']) & (df.index > idx)]
