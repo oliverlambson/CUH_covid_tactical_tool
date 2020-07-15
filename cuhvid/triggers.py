@@ -36,9 +36,6 @@ def get_rolling_mean(df, columns, no_days, center=False):
     return df
 
 def evaluate_triggers(df, df_ward_rank, admissions, net_intake, free_beds_min, free_beds_max, ward_changeup_time, ward_changedown_time):
-    # this should be moved to original ward function
-    df_ward_rank = df_ward_rank.set_index('AB_change_no')
-
     # init triggers
     # ..... admissions (up) ......
     # df['trigger_admissions'] = (df['y_gen_rm'] >= admissions) & (df['y_gen_rm'].shift() < admissions) # rolling mean trigger cross detection
@@ -62,7 +59,7 @@ def evaluate_triggers(df, df_ward_rank, admissions, net_intake, free_beds_min, f
     df['trigger_down'] = df['trigger_free_beds_max'] | df['trigger_net_intake'] # use trigger net intake too
 
     # init ward config no. on days
-    df['config_AB_change_no'] = -1
+    df['config_rank'] = 0
 
     # init no. wards opening in prog
     df['no_wards_up_in_prog'] = 0
@@ -87,10 +84,10 @@ def evaluate_triggers(df, df_ward_rank, admissions, net_intake, free_beds_min, f
 
         if df.loc[idx, 'trigger_up']:
             # increment ward config no. on days
-            new_AB_change_no = df.loc[idx, 'config_AB_change_no'] + df.loc[idx, 'no_wards_up_in_prog'] + 1
+            new_rank = df.loc[idx, 'config_rank'] + df.loc[idx, 'no_wards_up_in_prog'] + 1
             
             change_flag = (
-                (new_AB_change_no <= df_ward_rank.index.max()) # wards left to open or trigger up signal
+                (new_rank <= df_ward_rank.index.max()) # wards left to open or trigger up signal
                 & (
                     (df.loc[idx, 'GIM_R_beds_avail'] + df.loc[idx, 'no_beds_up_in_prog'] <= free_beds_min) # need beds after staged are changed
                     | (df.loc[idx, 'trigger_admissions'])
@@ -102,19 +99,19 @@ def evaluate_triggers(df, df_ward_rank, admissions, net_intake, free_beds_min, f
 
                 df.loc[idx:idx_end-1, 'no_wards_up_in_prog'] += 1
 
-                new_ID = df_ward_rank.loc[new_AB_change_no, 'id']
+                new_ID = df_ward_rank.loc[new_rank, 'ID']
                 df.loc[idx:idx_end-1, 'wards_up_in_prog_id'] += f'{new_ID}, '
 
-                df.loc[idx:idx_end-1, 'no_beds_up_in_prog'] += df_ward_rank.loc[new_AB_change_no, 'B_no_beds']
+                df.loc[idx:idx_end-1, 'no_beds_up_in_prog'] += df_ward_rank.loc[new_rank, 'ii_no_beds']
 
-                df.loc[idx_end:, 'config_AB_change_no'] = new_AB_change_no
+                df.loc[idx_end:, 'config_rank'] = new_rank
             
         elif df.loc[idx, 'trigger_down']:
             # increment ward config no. on days
-            new_AB_change_no = df.loc[idx, 'config_AB_change_no'] - df.loc[idx, 'no_wards_down_in_prog'] - 1
+            new_rank = df.loc[idx, 'config_rank'] - df.loc[idx, 'no_wards_down_in_prog'] - 1
 
             change_flag = (
-                (new_AB_change_no >= df_ward_rank.index.min()) # wards left to close
+                (new_rank >= df_ward_rank.index.min()) # wards left to close
                 & (
                     (df.loc[idx, 'GIM_R_beds_avail'] - df.loc[idx, 'no_beds_down_in_prog'] >= free_beds_max) # need beds after staged are changed
                     | (df.loc[idx, 'trigger_net_intake'])
@@ -126,19 +123,19 @@ def evaluate_triggers(df, df_ward_rank, admissions, net_intake, free_beds_min, f
                 
                 df.loc[idx:idx_end-1, 'no_wards_down_in_prog'] += 1
 
-                new_ID = df_ward_rank.loc[new_AB_change_no, 'id']
+                new_ID = df_ward_rank.loc[new_rank+1, 'ID']
                 df.loc[idx:idx_end-1, 'wards_down_in_prog_id'] += f'{new_ID}, '
 
-                df.loc[idx:idx_end-1, 'no_beds_down_in_prog'] += df_ward_rank.loc[new_AB_change_no, 'B_no_beds']
-                df.loc[idx_end:, 'config_AB_change_no'] = new_AB_change_no
+                df.loc[idx:idx_end-1, 'no_beds_down_in_prog'] += df_ward_rank.loc[new_rank+1, 'i_no_beds']
+                df.loc[idx_end:, 'config_rank'] = new_rank
 
         if change_flag:
             # update bed totals
-            new_R_tot = df_ward_rank.loc[new_AB_change_no, 'R_tot']
-            df.loc[idx_end:, 'GIM_R_beds'] = new_R_tot
+            new_R_no_beds = df_ward_rank.loc[new_rank, 'R_no_beds']
+            df.loc[idx_end:, 'GIM_R_beds'] = new_R_no_beds
 
-            new_A_tot = df_ward_rank.loc[new_AB_change_no, 'A_tot']
-            df.loc[idx_end:, 'GIM_A_beds'] = new_A_tot
+            new_A_no_beds = df_ward_rank.loc[new_rank, 'A_no_beds']
+            df.loc[idx_end:, 'GIM_A_beds'] = new_A_no_beds
 
             # update available beds
             df.loc[idx:, 'GIM_R_beds_avail'] = df.loc[idx:, 'GIM_R_beds'] - df.loc[idx:, 'GIM_R_gen']
