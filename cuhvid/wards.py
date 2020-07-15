@@ -253,6 +253,18 @@ def get_ward_change_rank2():
     # --------------- Add total no beds column ---------------
     df_rank['total_no_beds'] = df_rank['R_no_beds'] + df_rank['A_no_beds'] + df_rank['G_no_beds']
 
+    # --------------- Convert data types ---------------
+    df_rank = df_rank.astype({
+        'priority': int,
+        'color_rank': int,
+        'dR_no_beds': int,
+        'dA_no_beds': int,
+        'dG_no_beds': int,
+        'R_no_beds': int,
+        'A_no_beds': int,
+        'G_no_beds': int
+    })
+
     # --------------------------------------
     # --------------- Return ---------------
     # --------------------------------------
