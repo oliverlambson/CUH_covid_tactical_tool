@@ -36,6 +36,16 @@ def get_rolling_mean(df, columns, no_days, center=False):
     return df
 
 def evaluate_triggers(df, df_ward_rank, admissions, net_intake, free_beds_min, free_beds_max, ward_changeup_time, ward_changedown_time):
+    # init beds
+    df['GIM_R_beds'] = df_ward_rank.loc[0, 'R_no_beds']
+    df['GIM_A_beds'] = df_ward_rank.loc[0, 'A_no_beds']
+    df['GIM_G_beds'] = df_ward_rank.loc[0, 'G_no_beds']
+
+    # TODO: logic here to calculate no. beds remaining & ward opening
+    # for now: no ward changeovers
+    df['GIM_R_beds_avail'] = df['GIM_R_beds'] - df['GIM_R_gen']
+    df['GIM_A_beds_avail'] = df['GIM_A_beds'] - df['GIM_A_gen']
+    
     # init triggers
     # ..... admissions (up) ......
     # df['trigger_admissions'] = (df['y_gen_rm'] >= admissions) & (df['y_gen_rm'].shift() < admissions) # rolling mean trigger cross detection
