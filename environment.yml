@@ -16,3 +16,4 @@ dependencies:
   - voila
 prefix: /opt/anaconda3/envs/cuhvid
 
+# conda env export --from-history
