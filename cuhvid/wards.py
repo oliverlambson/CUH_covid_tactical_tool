@@ -220,7 +220,7 @@ def get_ward_change_rank2(bed_plan='v13', bed_size_ascending = False):
     df_rank['color_rank'] = df_rank['color_rank'].map(color_rank).fillna(0)
 
     df_rank = df_rank.sort_values(by=['scenario', 'priority', 'color_rank', 'dR_no_beds', 'dA_no_beds'], 
-                            ascending=[True, True, True, bed_size_ascending, bed_size_ascending])
+                            ascending=[True, False, True, bed_size_ascending, bed_size_ascending])
     df_rank['rank'] = range(1, len(df_rank)+1)
 
     # --------------- Reorder columns ---------------
