@@ -134,11 +134,10 @@ def _delta_beds(s, color):
         return 0
 
 
-def get_ward_change_rank2(bed_plan='v13', bed_size_ascending = False):
+def get_ward_change_rank2(path='/Users/oliverlambson/GitHub/ISMM/CUH_covid_tactical_tool/Data/bed_plan.xlsx', bed_plan='v13', bed_size_ascending = False):
     # --------------------------------------------
     # --------------- Read-in data ---------------
     # --------------------------------------------
-    path = '/Users/oliverlambson/GitHub/ISMM/CUH_covid_tactical_tool/Data/bed_plan.xlsx'
     df = pd.read_excel(path, sheet_name=bed_plan)
 
     # fill NaNs in important columns
