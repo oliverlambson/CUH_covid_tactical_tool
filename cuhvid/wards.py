@@ -134,12 +134,12 @@ def _delta_beds(s, color):
         return 0
 
 
-def get_ward_change_rank2(bed_size_ascending = False):
+def get_ward_change_rank2(bed_plan='v13', bed_size_ascending = False):
     # --------------------------------------------
     # --------------- Read-in data ---------------
     # --------------------------------------------
     path = '/Users/oliverlambson/GitHub/ISMM/CUH_covid_tactical_tool/Data/bed_plan.xlsx'
-    df = pd.read_excel(path, sheet_name='v13')
+    df = pd.read_excel(path, sheet_name=bed_plan)
 
     # fill NaNs in important columns
     df.loc[:, df.columns.str.contains('_priority')] = df.loc[:, df.columns.str.contains('_priority')].fillna(0)
@@ -148,10 +148,6 @@ def get_ward_change_rank2(bed_size_ascending = False):
     # drop unnecessary columns
     df = df.drop(columns=df.columns[df.columns.str.contains('no_beds_')])
     df = df.drop(columns=['division'])
-
-    # raise error if ward changes A->B and B->C
-    if len(df[df.AB_change & df.BC_change]) != 0:
-        raise Exception('Cannot handle changing same ward twice (from scenario A to B and scenario B to C)')
 
     # -----------------------------------------------------------
     # --------------- Get configuration summaries ---------------
@@ -221,7 +217,7 @@ def get_ward_change_rank2(bed_size_ascending = False):
         'GA': 2,
     }
     df_rank['color_rank'] = df_rank['i_color'] + df_rank['ii_color']
-    df_rank['color_rank'] = df_rank['color_rank'].map(color_rank)
+    df_rank['color_rank'] = df_rank['color_rank'].map(color_rank).fillna(0)
 
     df_rank = df_rank.sort_values(by=['scenario', 'priority', 'color_rank', 'dR_no_beds', 'dA_no_beds'], 
                             ascending=[True, True, True, bed_size_ascending, bed_size_ascending])
