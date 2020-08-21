@@ -54,3 +54,7 @@ conda activate cuhvid
 # serve voila app
 bash serve.sh
 ```
+
+---
+
+© Oliver Lambson, 2020
