@@ -41,7 +41,7 @@ This creates a conda environment called `cuhvid` and installs all the dependenci
 ## 1. Serve the interactive dashboard on local machine
 You can serve an interactive version of the notebook as a dashboard by activating the `cuhvid` conda environment and serving the Jupyter notebook using Voila by running the included `conda_env.sh` and `serve.sh` bash scripts:
 ```bash
-bash conda_env.sh  # may not work, see below
+source conda_env.sh  # may not work, see below
 bash serve.sh
 ```
 
